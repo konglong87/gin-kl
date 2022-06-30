@@ -18,6 +18,10 @@ var (
 	strColon = []byte(":")
 	strStar  = []byte("*")
 	strSlash = []byte("/")
+	panic = func(vs ...interface{}) {
+		vs = append(vs, "[TMD出错了]")
+		println(vs...)
+	}
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -54,6 +58,7 @@ type methodTree struct {
 	root   *node
 }
 
+//为什么用数组，不用map
 type methodTrees []methodTree
 
 func (trees methodTrees) get(method string) *node {
@@ -107,14 +112,18 @@ func countSections(path string) uint16 {
 type nodeType uint8
 
 const (
-	root nodeType = iota + 1
-	param
-	catchAll
+	root nodeType = iota + 1 //根节点
+	param //参数节点
+	catchAll //带*的，通配符节点
 )
 
 type node struct {
 	path      string
+	//和[]children 对应，保留的是 分裂的分支的 第一个字符
+	//比如 her 与 his， 那么 h 节点 保存indices就是  ei
+	//代表有两个分支，分支的首字母分别是 e和i
 	indices   string
+	//判断是不是参数  节点，比如 /her/:name  ,:name就是参数节点
 	wildChild bool
 	nType     nodeType
 	priority  uint32
@@ -307,6 +316,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
 		}
 
+		//参数节点
 		if wildcard[0] == ':' { // param
 			if i > 0 {
 				// Insert prefix before the current wildcard
@@ -343,7 +353,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			return
 		}
 
-		// catchAll
+		// catchAll，通配符*
 		if i+len(wildcard) != len(path) {
 			panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
 		}
@@ -421,6 +431,7 @@ func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
+		//要到end，最后
 		if len(path) > len(prefix) {
 			if path[:len(prefix)] == prefix {
 				path = path[len(prefix):]

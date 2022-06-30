@@ -22,9 +22,9 @@ const BindKey = "_gin-gonic/gin/bindkey"
 func Bind(val any) HandlerFunc {
 	value := reflect.ValueOf(val)
 	if value.Kind() == reflect.Ptr {
-		panic(`Bind struct can not be a pointer. Example:
+		panic(any(`Bind struct can not be a pointer. Example:
 	Use: gin.Bind(Struct{}) instead of gin.Bind(&Struct{})
-`)
+`))
 	}
 	typ := value.Type()
 
@@ -77,7 +77,7 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 
 func assert1(guard bool, text string) {
 	if !guard {
-		panic(text)
+		panic(any(text))
 	}
 }
 
@@ -97,7 +97,8 @@ func chooseData(custom, wildcard any) any {
 	if wildcard != nil {
 		return wildcard
 	}
-	panic("negotiation config is invalid")
+	panic(any("negotiation config is invalid"))
+	return nil
 }
 
 func parseAccept(acceptHeader string) []string {
@@ -116,7 +117,7 @@ func parseAccept(acceptHeader string) []string {
 
 func lastChar(str string) uint8 {
 	if str == "" {
-		panic("The length of the string can't be 0")
+		panic(any("The length of the string can't be 0"))
 	}
 	return str[len(str)-1]
 }
@@ -149,7 +150,7 @@ func resolveAddress(addr []string) string {
 	case 1:
 		return addr[0]
 	default:
-		panic("too many parameters")
+		panic(any("too many parameters"))
 	}
 }
 

@@ -223,7 +223,7 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 // Error will panic if err is nil.
 func (c *Context) Error(err error) *Error {
 	if err == nil {
-		panic("err is nil")
+		panic(any("err is nil"))
 	}
 
 	var parsedError *Error
@@ -269,7 +269,7 @@ func (c *Context) MustGet(key string) any {
 	if value, exists := c.Get(key); exists {
 		return value
 	}
-	panic("Key \"" + key + "\" does not exist")
+	panic(any("Key \"" + key + "\" does not exist"))
 }
 
 // GetString returns the value associated with the key as a string.
@@ -908,7 +908,7 @@ func (c *Context) Render(code int, r render.Render) {
 	}
 
 	if err := r.Render(c.Writer); err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 

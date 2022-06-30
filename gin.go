@@ -78,7 +78,7 @@ const (
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
-	RouterGroup
+	RouterGroup //路由
 
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -158,8 +158,8 @@ type Engine struct {
 	allNoMethod      HandlersChain
 	noRoute          HandlersChain
 	noMethod         HandlersChain
-	pool             sync.Pool
-	trees            methodTrees
+	pool             sync.Pool //context 上下文 对象池，减少频繁的内存操作以及gc，提高性能
+	trees            methodTrees //路有树，radix-tree
 	maxParams        uint16
 	maxSections      uint16
 	trustedProxies   []string
@@ -179,7 +179,7 @@ var _ IRouter = &Engine{}
 func New() *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
-		RouterGroup: RouterGroup{
+		RouterGroup: RouterGroup{ //创建一个路由组
 			Handlers: nil,
 			basePath: "/",
 			root:     true,
@@ -195,13 +195,13 @@ func New() *Engine {
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
-		trees:                  make(methodTrees, 0, 9),
+		trees:                  make(methodTrees, 0, 9), //共9个，get,put,delete,post
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
-	engine.RouterGroup.engine = engine
+	engine.RouterGroup.engine = engine //为了方便RouterGroup后续的操作，将本身engine  赋值 给  本身的RouterGroup.engine
 	engine.pool.New = func() any {
 		return engine.allocateContext()
 	}
@@ -212,7 +212,7 @@ func New() *Engine {
 func Default() *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
-	engine.Use(Logger(), Recovery())
+	engine.Use(Logger(), Recovery()) //中间件
 	return engine
 }
 
@@ -316,12 +316,14 @@ func (engine *Engine) rebuild405Handlers() {
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+	//校验 规则
 	assert1(path[0] == '/', "path must begin with '/'")
 	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
 
+	//获取 路由树，祝由术
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
@@ -379,6 +381,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
+	//调用  http 官方包 的 ListenAndServe
 	err = http.ListenAndServe(address, engine.Handler())
 	return
 }
@@ -564,13 +567,16 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	//从 对象池 中 拿一个
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
 	c.reset()
 
+	//让gin处理 http请求
 	engine.handleHTTPRequest(c)
 
+	//再放回去
 	engine.pool.Put(c)
 }
 

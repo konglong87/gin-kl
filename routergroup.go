@@ -101,7 +101,7 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // communication with a proxy).
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) IRoutes {
 	if matched := regEnLetter.MatchString(httpMethod); !matched {
-		panic("http method " + httpMethod + " is not valid")
+		panic(any("http method " + httpMethod + " is not valid"))
 	}
 	return group.handle(httpMethod, relativePath, handlers)
 }
@@ -170,7 +170,7 @@ func (group *RouterGroup) StaticFileFS(relativePath, filepath string, fs http.Fi
 
 func (group *RouterGroup) staticFileHandler(relativePath string, handler HandlerFunc) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
-		panic("URL parameters can not be used when serving a static file")
+		panic(any("URL parameters can not be used when serving a static file"))
 	}
 	group.GET(relativePath, handler)
 	group.HEAD(relativePath, handler)
@@ -191,7 +191,7 @@ func (group *RouterGroup) Static(relativePath, root string) IRoutes {
 // Gin by default user: gin.Dir()
 func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
-		panic("URL parameters can not be used when serving a static folder")
+		panic(any("URL parameters can not be used when serving a static folder"))
 	}
 	handler := group.createStaticHandler(relativePath, fs)
 	urlPattern := path.Join(relativePath, "/*filepath")
