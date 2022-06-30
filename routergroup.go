@@ -39,9 +39,9 @@ type IRoutes interface {
 // RouterGroup is used internally to configure router, a RouterGroup is associated with
 // a prefix and an array of handlers (middleware).
 type RouterGroup struct {
-	Handlers HandlersChain
+	Handlers HandlersChain //中间件，处理函数
 	basePath string
-	engine   *Engine
+	engine   *Engine //核心 处理 引擎 对象
 	root     bool
 }
 

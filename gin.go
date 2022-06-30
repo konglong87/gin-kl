@@ -19,6 +19,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
+//默认 最大 内存 32 MB
 const defaultMultipartMemory = 32 << 20 // 32 MB
 
 var (
@@ -68,12 +69,14 @@ const (
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
+	//路由组
 	RouterGroup
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
 	// For example if /foo/ is requested but a route only exists for /foo, the
 	// client is redirected to /foo with http status code 301 for GET requests
+	//比如 当/foo/没有匹配到的时, 是否允许重定向到/foo路径
 	// and 307 for all other request methods.
 	RedirectTrailingSlash bool
 
@@ -86,6 +89,7 @@ type Engine struct {
 	// all other request methods.
 	// For example /FOO and /..//Foo could be redirected to /foo.
 	// RedirectTrailingSlash is independent of this option.
+	//是否允许修正路径
 	RedirectFixedPath bool
 
 	// If enabled, the router checks if another method is allowed for the
@@ -141,8 +145,8 @@ type Engine struct {
 	allNoMethod      HandlersChain
 	noRoute          HandlersChain
 	noMethod         HandlersChain
-	pool             sync.Pool
-	trees            methodTrees
+	pool             sync.Pool //对象池，减少频繁内存申请gc，提高性能
+	trees            methodTrees//路由树
 	maxParams        uint16
 	maxSections      uint16
 	trustedProxies   []string
@@ -162,6 +166,7 @@ var _ IRouter = &Engine{}
 func New() *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
+		//建立 根 路由 组
 		RouterGroup: RouterGroup{
 			Handlers: nil,
 			basePath: "/",
@@ -178,13 +183,13 @@ func New() *Engine {
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
-		trees:                  make(methodTrees, 0, 9),
+		trees:                  make(methodTrees, 0, 9), //共9个 路由树
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
 		trustedProxies:         []string{"0.0.0.0/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
-	engine.RouterGroup.engine = engine
+	engine.RouterGroup.engine = engine //为了 RouterGroup 方便 操作，赋值
 	engine.pool.New = func() interface{} {
 		return engine.allocateContext()
 	}
@@ -290,18 +295,21 @@ func (engine *Engine) rebuild405Handlers() {
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+	//规则 校验
 	assert1(path[0] == '/', "path must begin with '/'")
 	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
 
+	//根节点 node
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
 		root.fullPath = "/"
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
+	//增加 子节点
 	root.addRoute(path, handlers)
 
 	// Update maxParams
@@ -353,6 +361,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
+	// 调用 http 监听
 	err = http.ListenAndServe(address, engine)
 	return
 }

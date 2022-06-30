@@ -49,13 +49,17 @@ func (ps Params) ByName(name string) (va string) {
 	return
 }
 
+//基数树，radix-tree，由 前缀树 演变 进化而来
 type methodTree struct {
 	method string
 	root   *node
 }
 
+//共9个，按照method将所有的方法分开, 然后每个method下面都是一个radix tree
+//GET、PUT 、DELETE、 POST 、OPTION、 PATCH、HEAD、TRACE、CONNECT
 type methodTrees []methodTree
 
+//tips: 为什么用 数组 不用 map？
 func (trees methodTrees) get(method string) *node {
 	for _, tree := range trees {
 		if tree.method == method {
@@ -72,6 +76,7 @@ func min(a, b int) int {
 	return b
 }
 
+//最长 公共子前缀
 func longestCommonPrefix(a, b string) int {
 	i := 0
 	max := min(len(a), len(b))
@@ -108,17 +113,47 @@ type nodeType uint8
 
 const (
 	static nodeType = iota // default
-	root
-	param
-	catchAll
+	root //根节点
+	param //参数节点
+	catchAll //通配符，节点，必须在路径的最后，
+	/*
+	catchAll 举例：
+	比如 /srcfilepath
+	/src/                     match
+	/src/somefile.go          match
+	/src/subdir/somefile.go   match
+*/
 )
 
+
+/*----------------------------------
+//----------GET请求树例子-------------
+//----------------------------------
+Priority   Path             Handle
+9          \                *<1>
+3          ├s               nil
+2          |├earch\         *<2>
+1          |└upport\        *<3>
+2          ├blog\           *<4>
+1          |    └:post      nil
+1          |         └\     *<5>
+2          ├about-us\       *<6>
+1          |        └team\  *<7>
+1          └contact\        *<8>
+*/
+//radix-tree 节点 类型
 type node struct {
+	//这个节点的URL的路径
+	//例如search与support，共同的父节点path='s'，类型就是static
+	//子节点就是2个，'earch'和'upport'
 	path      string
+
+	//保存所有子节点的第一个字符，例如search与support，indices保存的是eu，标识有2个 子节点，子节点分支分别是e、u
 	indices   string
-	wildChild bool
+	wildChild bool //是否参数 节点
+
 	nType     nodeType
-	priority  uint32
+	priority  uint32 //权重，优先级，便于查找
 	children  []*node // child nodes, at most 1 :param style node at the end of the array
 	handlers  HandlersChain
 	fullPath  string
@@ -147,6 +182,7 @@ func (n *node) incrementChildPrio(pos int) int {
 	return newPos
 }
 
+//建树
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
 func (n *node) addRoute(path string, handlers HandlersChain) {
@@ -156,7 +192,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 	// Empty tree
 	if len(n.path) == 0 && len(n.children) == 0 {
 		n.insertChild(path, fullPath, handlers)
-		n.nType = root
+		n.nType = root //根节点
 		return
 	}
 
@@ -170,6 +206,7 @@ walk:
 		i := longestCommonPrefix(path, n.path)
 
 		// Split edge
+		//比如 /search与/support，最长公共子前缀是/s，则/s是父节点，
 		if i < len(n.path) {
 			child := node{
 				path:      n.path[i:],
@@ -214,7 +251,7 @@ walk:
 			}
 
 			// Otherwise insert it
-			if c != ':' && c != '*' && n.nType != catchAll {
+			if c != ':' && c != '*' && n.nType != catchAll {//默认static节点
 				// []byte for proper unicode char conversion, see #65
 				n.indices += bytesconv.BytesToString([]byte{c})
 				child := &node{
@@ -223,7 +260,7 @@ walk:
 				n.addChild(child)
 				n.incrementChildPrio(len(n.indices) - 1)
 				n = child
-			} else if n.wildChild {
+			} else if n.wildChild {//参数节点
 				// inserting a wildcard node, need to check if it conflicts with the existing wildcard
 				n = n.children[len(n.children)-1]
 				n.priority++
@@ -250,11 +287,13 @@ walk:
 					"'")
 			}
 
+			//插入节点
 			n.insertChild(path, fullPath, handlers)
 			return
 		}
 
 		// Otherwise add handle to current node
+		//相同路径，直接替换handlers
 		if n.handlers != nil {
 			panic("handlers are already registered for path '" + fullPath + "'")
 		}
@@ -269,7 +308,7 @@ walk:
 func findWildcard(path string) (wildcard string, i int, valid bool) {
 	// Find start
 	for start, c := range []byte(path) {
-		// A wildcard starts with ':' (param) or '*' (catch-all)
+		// A wildcard starts with ':' (param)参数  or '*' (catch-all) 通配符
 		if c != ':' && c != '*' {
 			continue
 		}

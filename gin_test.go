@@ -439,6 +439,7 @@ func compareFunc(t *testing.T, a, b interface{}) {
 
 func TestListOfRoutes(t *testing.T) {
 	router := New()
+	//router.Handle()
 	router.GET("/favicon.ico", handlerTest1)
 	router.GET("/", handlerTest1)
 	group := router.Group("/users")
