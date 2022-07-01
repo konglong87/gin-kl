@@ -658,5 +658,20 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 	t.Errorf("route not found: %v", wantRoute)
 }
 
-func handlerTest1(c *Context) {}
+func handlerTest1(c *Context) {c.JSONP(http.StatusOK,"handlerTest1")}
 func handlerTest2(c *Context) {}
+
+
+func TestNew(t *testing.T) {
+	router := New()
+	fmt.Println("开始前进")
+	//router.Handle()
+	router.GET("/", handlerTest1)
+	group := router.Group("/users")
+	{
+		group.GET("/", handlerTest2)
+		group.GET("/:id", handlerTest1)
+		group.GET("/name", handlerTest1)
+	}
+	router.Run(":90")
+}

@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bytes"
+	"fmt"
 	"net/url"
 	"strings"
 	"unicode"
@@ -88,6 +89,7 @@ func longestCommonPrefix(a, b string) int {
 
 // addChild will add a child node, keeping wildcards at the end
 func (n *node) addChild(child *node) {
+	fmt.Printf("插入【addChild】 node==%#+v\n",child)
 	if n.wildChild && len(n.children) > 0 {
 		wildcardChild := n.children[len(n.children)-1]
 		n.children = append(n.children[:len(n.children)-1], child, wildcardChild)
@@ -237,6 +239,7 @@ walk:
 				parentFullPathIndex += len(n.path)
 				n = n.children[0]
 				n.priority++
+				fmt.Printf("[当前addRoute][n.nType == param && c == '/' ] node==%#+v \n",n)
 				continue walk
 			}
 
@@ -246,6 +249,7 @@ walk:
 					parentFullPathIndex += len(n.path)
 					i = n.incrementChildPrio(i)
 					n = n.children[i]
+					fmt.Printf("[当前addRoute][ i, max := 0, len(n.indices);] node==%#+v \n",n)
 					continue walk
 				}
 			}
@@ -260,7 +264,7 @@ walk:
 				n.addChild(child)
 				n.incrementChildPrio(len(n.indices) - 1)
 				n = child
-			} else if n.wildChild {//参数节点
+			} else if n.wildChild {//参数节点, :或者*
 				// inserting a wildcard node, need to check if it conflicts with the existing wildcard
 				n = n.children[len(n.children)-1]
 				n.priority++
@@ -270,6 +274,7 @@ walk:
 					// Adding a child to a catchAll is not possible
 					n.nType != catchAll &&
 					// Check for longer wildcard, e.g. :name and :names
+					//检查 是不是 更长的参数，比如 /einstein-logic/v1/user/:userId,与/einstein-logic/v1/user/:userIdssss
 					(len(n.path) >= len(path) || path[len(n.path)] == '/') {
 					continue walk
 				}
@@ -315,6 +320,7 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 
 		// Find end and check for invalid characters
 		valid = true
+		// ":" 或"*"必须先有"/", 不能直接有 ":","*"
 		for end, c := range []byte(path[start+1:]) {
 			switch c {
 			case '/':
@@ -332,10 +338,12 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 	for {
 		// Find prefix until first wildcard
 		wildcard, i, valid := findWildcard(path)
+		//终止条件： 不再有 通配符
 		if i < 0 { // No wildcard found
+			fmt.Println("【insertChild终止】",path)
 			break
 		}
-
+	    fmt.Printf("[insertChild] path=%v, fullPath=%v, handlers=%#v, \n",path,fullPath,handlers)
 		// The wildcard name must not contain ':' and '*'
 		if !valid {
 			panic("only one wildcard per path segment is allowed, has: '" +
@@ -353,7 +361,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 				n.path = path[:i]
 				path = path[i:]
 			}
-
+			//参数类型 ":"
 			child := &node{
 				nType:    param,
 				path:     wildcard,
@@ -401,6 +409,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		n.path = path[:i]
 
 		// First node: catchAll node with empty path
+		//通配符类型 *
 		child := &node{
 			wildChild: true,
 			nType:     catchAll,
@@ -452,7 +461,7 @@ type skippedNode struct {
 // given path.
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
 	var globalParamsCount int16
-
+fmt.Printf("[getValue] path=%v ,params=%+v,skippedNodes=%+v \n",path,params,skippedNodes)
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -488,6 +497,7 @@ walk: // Outer loop for walking the tree
 					}
 				}
 
+				//不是参数节点
 				if !n.wildChild {
 					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
 					// the current node needs to roll back to last vaild skippedNode
@@ -903,4 +913,14 @@ walk: // Outer loop for walking the tree
 		}
 	}
 	return nil
+}
+
+func(n *node) Search1(){
+	if n == nil{
+		return
+	}
+	fmt.Printf("[打印当前节点] node==%#+v \n",n)
+	for i,_ := range n.children {
+		n.children[i].Search1()
+	}
 }

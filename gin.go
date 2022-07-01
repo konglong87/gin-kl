@@ -312,6 +312,8 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	//增加 子节点
 	root.addRoute(path, handlers)
 
+	root.Search1()
+
 	// Update maxParams
 	if paramsCount := countParams(path); paramsCount > engine.maxParams {
 		engine.maxParams = paramsCount
@@ -512,6 +514,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("【提供ServeHTTP了】==== ServeHTTP")
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
