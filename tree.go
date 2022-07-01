@@ -89,7 +89,7 @@ func longestCommonPrefix(a, b string) int {
 
 // addChild will add a child node, keeping wildcards at the end
 func (n *node) addChild(child *node) {
-	fmt.Printf("插入【addChild】 node==%#+v\n",child)
+	fmt.Printf("==> 插入到子节点【addChild】 node==%#+v\n",child)
 	if n.wildChild && len(n.children) > 0 {
 		wildcardChild := n.children[len(n.children)-1]
 		n.children = append(n.children[:len(n.children)-1], child, wildcardChild)

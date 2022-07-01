@@ -675,3 +675,14 @@ func TestNew(t *testing.T) {
 	}
 	router.Run(":90")
 }
+
+func TestTree1(t *testing.T) {
+	router := New()
+	fmt.Println("开始:")
+	//router.Handle()
+	//router.GET("/", handlerTest1)
+	router.GET("/her", handlerTest1)
+	router.GET("/his", handlerTest1)
+
+	router.Run(":90")
+}
