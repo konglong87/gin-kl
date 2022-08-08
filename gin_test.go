@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -685,4 +686,15 @@ func TestTree1(t *testing.T) {
 	router.GET("/his", handlerTest1)
 
 	router.Run(":90")
+}
+
+//用go的原生http
+func TestGoHttp1(t *testing.T) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("  恐龙🦖 "))
+	})
+
+	if err := http.ListenAndServe(":80", nil); err != nil{
+		log.Fatal("start http server fail:", err)
+	}
 }
