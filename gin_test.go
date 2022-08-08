@@ -698,3 +698,24 @@ func TestGoHttp1(t *testing.T) {
 		log.Fatal("start http server fail:", err)
 	}
 }
+
+//设置受信任的代理
+func TestEngine_SetTrustedProxies(t *testing.T) {
+		r := Default()
+		// 下面两种方式2选1即可，推荐使用第二种
+		//r.TrustedPlatform = "Client-IP"  // 设置客户端真实ip的请求头
+		// 设置受信任的代理
+		r.SetTrustedProxies([]string{"127.0.0.1"})
+		// 设置url中的大写自动转小写，..和//自动移除，
+		r.RedirectFixedPath = true
+		// 开启请求方法不允许，并且返回状态码405
+		r.HandleMethodNotAllowed = true
+		// 设置允许从远程客户端的哪个header头中获取ip（需搭配设置受信任的代理一起使用）
+		r.RemoteIPHeaders = append(r.RemoteIPHeaders, "Client-IP")
+		// TrustedPlatform 设置可信任的平台，如果增加了此项配置，那么获取客户端真实ip的时候
+		// 会优先从请求头中的Real-IP获取，获取到了直接返回，获取不到才会从RemoteIPHeaders中去获取
+		// 一般不这样设置，推荐从RemoteIPHeaders中获取，当然前提需要设置受信任的代理, 如果不想设置受信任的代理，那么可以直接从TrustedPlatform中直接获取
+		//r.TrustedPlatform = "Real-IP"
+		//r.GET("/user/:name", routeUse)
+		r.Run(":8000")
+}
