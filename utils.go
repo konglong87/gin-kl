@@ -6,6 +6,7 @@ package gin
 
 import (
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -121,7 +122,9 @@ func lastChar(str string) uint8 {
 }
 
 func nameOfFunction(f interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+	name := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+	fmt.Println("这个handler的name是：",name)
+	return name
 }
 
 func joinPaths(absolutePath, relativePath string) string {

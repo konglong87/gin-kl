@@ -143,7 +143,7 @@ Priority   Path             Handle
 1          |        └team\  *<7>
 1          └contact\        *<8>
 */
-//radix-tree 节点 类型
+//radix-tree 节点 类型，类似的上次说 apisex也是用的这个数据结构，所以apisex说 时间复杂度是O(N),与自身长度有关，而kong则是与 api的数量正相关
 type node struct {
 	//这个节点的URL的路径
 	//例如search与support，共同的父节点path='s'，类型就是static
@@ -529,7 +529,7 @@ walk: // Outer loop for walking the tree
 				globalParamsCount++
 
 				switch n.nType {
-				case param:
+				case param://参数类型
 					// fix truncate the parameter
 					// tree_test.go  line: 204
 

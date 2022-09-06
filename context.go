@@ -165,7 +165,11 @@ func (c *Context) FullPath() string {
 func (c *Context) Next() {
 	c.index++
 	for c.index < int8(len(c.handlers)) {
-		c.handlers[c.index](c)
+		//获取 函数
+		curr := c.handlers[c.index]
+		nameOfFunction(curr)
+		//执行函数
+		curr(c)
 		c.index++
 	}
 }

@@ -661,6 +661,8 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 
 func handlerTest1(c *Context) {c.JSONP(http.StatusOK,"handlerTest1")}
 func handlerTest2(c *Context) {}
+func handlerTest3(c *Context) {c.JSONP(http.StatusOK,"handlerTest1， id="+c.Param("id"))}
+
 
 
 func TestNew(t *testing.T) {
@@ -683,6 +685,7 @@ func TestTree1(t *testing.T) {
 	//router.Handle()
 	//router.GET("/", handlerTest1)
 	router.GET("/her", handlerTest1)
+	router.GET("/her/:id", handlerTest3)
 	router.GET("/his", handlerTest1)
 
 	router.Run(":90")

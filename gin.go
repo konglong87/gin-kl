@@ -68,6 +68,7 @@ const (
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
 // Create an instance of Engine, by using New() or Default()
+//Engine 实现了go-http源码server文件中 ServeHTTP 函数
 type Engine struct {
 	//路由组
 	RouterGroup
@@ -312,6 +313,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	//增加 子节点
 	root.addRoute(path, handlers)
 
+	//自定义打印，只是方便查看，无关gin功能
 	root.Search1()
 
 	// Update maxParams
@@ -333,6 +335,7 @@ func (engine *Engine) Routes() (routes RoutesInfo) {
 	return routes
 }
 
+//递归，获取 所有 handler
 func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	path += root.path
 	if len(root.handlers) > 0 {
@@ -363,7 +366,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	// 调用 http 监听
+	// 调用 http 监听，流转 到go源码-官方包，engine  作为 go源码监听时候的handler参数 传进去，engine实现了ServeHTTP函数
 	err = http.ListenAndServe(address, engine)
 	return
 }
@@ -513,8 +516,9 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 }
 
 // ServeHTTP conforms to the http.Handler interface.
+//从 go的官方包中 又 流转回来，ServeHTTP是 实现了 go-http-server中ServeHTTP的实例
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("【提供ServeHTTP了】==== ServeHTTP")
+	fmt.Println("【提供ServeHTTP了】==== ServeHTTP【这是--GIN--http-服务--】")
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
@@ -548,6 +552,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	if engine.RemoveExtraSlash {
 		rPath = cleanPath(rPath)
 	}
+	fmt.Println("[GIN处理http请求] handleHTTPRequest-",httpMethod,rPath)
 
 	// Find root of the tree for the given HTTP method
 	t := engine.trees
