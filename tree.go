@@ -350,12 +350,12 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		//终止条件： 不再有 通配符
 		if i < 0 { // No wildcard found
 			if IsDebugging() {
-				fmt.Println("【insertChild终止】", path, "==handlers==", handlers)
+				fmt.Println("[创建 路由树]【insertChild终止】", path, "==handlers==", handlers)
 			}
 			break
 		}
 		if IsDebugging() {
-			fmt.Printf("[insertChild] path=%v, fullPath=%v, handlers=%#v, \n", path, fullPath, handlers)
+			fmt.Printf("[创建 路由树][insertChild] path=%v, fullPath=%v, handlers=%#v, \n", path, fullPath, handlers)
 		}
 		// The wildcard name must not contain ':' and '*'
 		if !valid {
@@ -937,7 +937,7 @@ func (n *node) Search1() {
 	if n == nil {
 		return
 	}
-	fmt.Println("\n [打印当前root节点 信息]", n)
+	fmt.Println("\n [创建 路由树][打印当前root节点 信息]", n)
 	for i, _ := range n.children {
 		n.children[i].Search1()
 	}
