@@ -663,6 +663,7 @@ func handlerTest1(c *Context) { c.JSONP(http.StatusOK, "handlerTest1") }
 func handlerTest2(c *Context) {}
 func handlerTest3(c *Context) { c.JSONP(http.StatusOK, "handlerTest1， id="+c.Param("id")) }
 func handlerTest4(c *Context) { c.JSONP(http.StatusOK, "handlerTest4") }
+func handlerTest5(c *Context) { c.JSONP(http.StatusOK, "handlerTest5") }
 
 func TestNew(t *testing.T) {
 	router := New()
@@ -690,6 +691,8 @@ func TestTree1(t *testing.T) {
 	router.GET("/her", handlerTest1)
 	router.GET("/her/:id", handlerTest3)
 	router.GET("/his", handlerTest4)
+
+	router.POST("/her", handlerTest5)
 
 	router.Run(":90")
 }
