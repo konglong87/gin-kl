@@ -301,6 +301,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
+	fmt.Println("addRoute==names: ",namesOfFunctions(handlers))
 	debugPrintRoute(method, path, handlers)
 
 	//根节点 node

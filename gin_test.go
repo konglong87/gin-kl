@@ -684,11 +684,19 @@ func TestTree1(t *testing.T) {
 	fmt.Println("开始:")
 	//router.Handle()
 	//router.GET("/", handlerTest1)
+	router.Use(middleware1)
 	router.GET("/her", handlerTest1)
 	router.GET("/her/:id", handlerTest3)
 	router.GET("/his", handlerTest1)
 
 	router.Run(":90")
+}
+func middleware1(c *Context) {
+	start:= time.Now()
+	//处理业务
+	c.Next()
+	elapse := time.Now().Sub(start)
+	fmt.Println("[middleware1]处理业务逻辑耗费时间=",elapse)
 }
 
 //用go的原生http

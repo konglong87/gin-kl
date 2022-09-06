@@ -127,6 +127,16 @@ func nameOfFunction(f interface{}) string {
 	return name
 }
 
+func namesOfFunctions(fs ...interface{}) string {
+	names := []string{}
+	for i, _ := range fs {
+		name := nameOfFunction(fs[i])
+		names = append(names, name)
+	}
+	return strings.Join(names," , ")
+}
+
+
 func joinPaths(absolutePath, relativePath string) string {
 	if relativePath == "" {
 		return absolutePath
