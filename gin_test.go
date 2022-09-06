@@ -167,6 +167,7 @@ func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 	assert.Equal(t, "Date: 2017/07/01\n", string(resp))
 }
 
+//设置 test mode，默认 debug
 func init() {
 	SetMode(TestMode)
 }
@@ -680,9 +681,12 @@ func TestNew(t *testing.T) {
 }
 
 func TestTree1(t *testing.T) {
-	//自定义 debug 信息，开关，是否打印
-	SetMode(DebugMode)
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	//SetMode(DebugMode)
 	router := New()
+	fmt.Println(IsDebugging())
+	fmt.Println(Mode())
+	router.Use(Logger(), Recovery())
 	fmt.Println("[TestTree1]开始:")
 	//router.Handle()
 	//router.GET("/", handlerTest1)
@@ -694,6 +698,7 @@ func TestTree1(t *testing.T) {
 
 	router.POST("/her", handlerTest5)
 
+	//fmt.Println(router.Routes())
 	router.Run(":90")
 }
 func middleware1(c *Context) {

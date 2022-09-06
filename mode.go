@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -46,11 +47,13 @@ var modeName = DebugMode
 
 func init() {
 	mode := os.Getenv(EnvGinMode)
+	fmt.Println("mde-------", mode)
 	SetMode(mode)
 }
 
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
+	fmt.Println("value---=====>", value)
 	if value == "" {
 		value = DebugMode
 	}

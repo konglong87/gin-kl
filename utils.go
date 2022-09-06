@@ -123,7 +123,9 @@ func lastChar(str string) uint8 {
 
 func nameOfFunction(f interface{}) string {
 	name := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
-	fmt.Println("这个handler的name是：",name)
+	if IsDebugging() {
+		fmt.Println("这个handler的name是：", name)
+	}
 	return name
 }
 
@@ -134,9 +136,8 @@ func namesOfFunctions(fs HandlersChain) string {
 		name := nameOfFunction(fs[i])
 		names = append(names, name)
 	}
-	return strings.Join(names," , ")
+	return strings.Join(names, " , ")
 }
-
 
 func joinPaths(absolutePath, relativePath string) string {
 	if relativePath == "" {
