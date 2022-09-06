@@ -659,11 +659,10 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 	t.Errorf("route not found: %v", wantRoute)
 }
 
-func handlerTest1(c *Context) {c.JSONP(http.StatusOK,"handlerTest1")}
+func handlerTest1(c *Context) { c.JSONP(http.StatusOK, "handlerTest1") }
 func handlerTest2(c *Context) {}
-func handlerTest3(c *Context) {c.JSONP(http.StatusOK,"handlerTest1， id="+c.Param("id"))}
-
-
+func handlerTest3(c *Context) { c.JSONP(http.StatusOK, "handlerTest1， id="+c.Param("id")) }
+func handlerTest4(c *Context) { c.JSONP(http.StatusOK, "handlerTest4") }
 
 func TestNew(t *testing.T) {
 	router := New()
@@ -680,23 +679,30 @@ func TestNew(t *testing.T) {
 }
 
 func TestTree1(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印
+	SetMode(DebugMode)
 	router := New()
-	fmt.Println("开始:")
+	fmt.Println("[TestTree1]开始:")
 	//router.Handle()
 	//router.GET("/", handlerTest1)
 	router.Use(middleware1)
+	router.Use(middleware2)
 	router.GET("/her", handlerTest1)
 	router.GET("/her/:id", handlerTest3)
-	router.GET("/his", handlerTest1)
+	router.GET("/his", handlerTest4)
 
 	router.Run(":90")
 }
 func middleware1(c *Context) {
-	start:= time.Now()
+	start := time.Now()
 	//处理业务
 	c.Next()
 	elapse := time.Now().Sub(start)
-	fmt.Println("[middleware1]处理业务逻辑耗费时间=",elapse)
+	fmt.Println("[middleware1]处理业务逻辑耗费时间=", elapse)
+}
+
+func middleware2(c *Context) {
+	fmt.Println("[middleware2] this is middleware2 .")
 }
 
 //用go的原生http
@@ -705,28 +711,28 @@ func TestGoHttp1(t *testing.T) {
 		w.Write([]byte("  恐龙🦖 "))
 	})
 
-	if err := http.ListenAndServe(":80", nil); err != nil{
+	if err := http.ListenAndServe(":80", nil); err != nil {
 		log.Fatal("start http server fail:", err)
 	}
 }
 
 //设置受信任的代理
 func TestEngine_SetTrustedProxies(t *testing.T) {
-		r := Default()
-		// 下面两种方式2选1即可，推荐使用第二种
-		//r.TrustedPlatform = "Client-IP"  // 设置客户端真实ip的请求头
-		// 设置受信任的代理
-		r.SetTrustedProxies([]string{"127.0.0.1"})
-		// 设置url中的大写自动转小写，..和//自动移除，
-		r.RedirectFixedPath = true
-		// 开启请求方法不允许，并且返回状态码405
-		r.HandleMethodNotAllowed = true
-		// 设置允许从远程客户端的哪个header头中获取ip（需搭配设置受信任的代理一起使用）
-		r.RemoteIPHeaders = append(r.RemoteIPHeaders, "Client-IP")
-		// TrustedPlatform 设置可信任的平台，如果增加了此项配置，那么获取客户端真实ip的时候
-		// 会优先从请求头中的Real-IP获取，获取到了直接返回，获取不到才会从RemoteIPHeaders中去获取
-		// 一般不这样设置，推荐从RemoteIPHeaders中获取，当然前提需要设置受信任的代理, 如果不想设置受信任的代理，那么可以直接从TrustedPlatform中直接获取
-		//r.TrustedPlatform = "Real-IP"
-		//r.GET("/user/:name", routeUse)
-		r.Run(":8000")
+	r := Default()
+	// 下面两种方式2选1即可，推荐使用第二种
+	//r.TrustedPlatform = "Client-IP"  // 设置客户端真实ip的请求头
+	// 设置受信任的代理
+	r.SetTrustedProxies([]string{"127.0.0.1"})
+	// 设置url中的大写自动转小写，..和//自动移除，
+	r.RedirectFixedPath = true
+	// 开启请求方法不允许，并且返回状态码405
+	r.HandleMethodNotAllowed = true
+	// 设置允许从远程客户端的哪个header头中获取ip（需搭配设置受信任的代理一起使用）
+	r.RemoteIPHeaders = append(r.RemoteIPHeaders, "Client-IP")
+	// TrustedPlatform 设置可信任的平台，如果增加了此项配置，那么获取客户端真实ip的时候
+	// 会优先从请求头中的Real-IP获取，获取到了直接返回，获取不到才会从RemoteIPHeaders中去获取
+	// 一般不这样设置，推荐从RemoteIPHeaders中获取，当然前提需要设置受信任的代理, 如果不想设置受信任的代理，那么可以直接从TrustedPlatform中直接获取
+	//r.TrustedPlatform = "Real-IP"
+	//r.GET("/user/:name", routeUse)
+	r.Run(":8000")
 }

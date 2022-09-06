@@ -89,7 +89,9 @@ func longestCommonPrefix(a, b string) int {
 
 // addChild will add a child node, keeping wildcards at the end
 func (n *node) addChild(child *node) {
-	fmt.Printf("==> 插入到子节点【addChild】 node==%#+v\n",child)
+	if IsDebugging() {
+		fmt.Println("==> 插入到子节点【addChild】 node==\n", child)
+	}
 	if n.wildChild && len(n.children) > 0 {
 		wildcardChild := n.children[len(n.children)-1]
 		n.children = append(n.children[:len(n.children)-1], child, wildcardChild)
@@ -114,19 +116,18 @@ func countSections(path string) uint16 {
 type nodeType uint8
 
 const (
-	static nodeType = iota // default
-	root //根节点
-	param //参数节点
-	catchAll //通配符，节点，必须在路径的最后，
+	static   nodeType = iota // default
+	root                     //根节点
+	param                    //参数节点
+	catchAll                 //通配符，节点，必须在路径的最后，
 	/*
-	catchAll 举例：
-	比如 /srcfilepath
-	/src/                     match
-	/src/somefile.go          match
-	/src/subdir/somefile.go   match
-*/
+		catchAll 举例：
+		比如 /srcfilepath
+		/src/                     match
+		/src/somefile.go          match
+		/src/subdir/somefile.go   match
+	*/
 )
-
 
 /*----------------------------------
 //----------GET请求树例子-------------
@@ -148,17 +149,25 @@ type node struct {
 	//这个节点的URL的路径
 	//例如search与support，共同的父节点path='s'，类型就是static
 	//子节点就是2个，'earch'和'upport'
-	path      string
+	path string
 
 	//保存所有子节点的第一个字符，例如search与support，indices保存的是eu，标识有2个 子节点，子节点分支分别是e、u
 	indices   string
 	wildChild bool //是否参数 节点
 
-	nType     nodeType
-	priority  uint32 //权重，优先级，便于查找
-	children  []*node // child nodes, at most 1 :param style node at the end of the array
-	handlers  HandlersChain
-	fullPath  string
+	nType    nodeType
+	priority uint32  //权重，优先级，便于查找
+	children []*node // child nodes, at most 1 :param style node at the end of the array
+	handlers HandlersChain
+	fullPath string
+}
+
+func (h HandlersChain) String() string {
+	return namesOfFunctions(h)
+}
+
+func (n *node) String() string {
+	return fmt.Sprintf("%+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n", n, n.handlers, n.nType)
 }
 
 // Increments priority of the given child and reorders if necessary
@@ -239,7 +248,7 @@ walk:
 				parentFullPathIndex += len(n.path)
 				n = n.children[0]
 				n.priority++
-				fmt.Printf("[当前addRoute][n.nType == param && c == '/' ] node==%#+v \n",n)
+				fmt.Printf("[当前addRoute][n.nType == param && c == '/' ] node==%#+v \n", n)
 				continue walk
 			}
 
@@ -249,13 +258,13 @@ walk:
 					parentFullPathIndex += len(n.path)
 					i = n.incrementChildPrio(i)
 					n = n.children[i]
-					fmt.Printf("[当前addRoute][ i, max := 0, len(n.indices);] node==%#+v \n",n)
+					fmt.Printf("[当前addRoute][ i, max := 0, len(n.indices);] node==%#+v \n", n)
 					continue walk
 				}
 			}
 
 			// Otherwise insert it
-			if c != ':' && c != '*' && n.nType != catchAll {//默认static节点
+			if c != ':' && c != '*' && n.nType != catchAll { //默认static节点
 				// []byte for proper unicode char conversion, see #65
 				n.indices += bytesconv.BytesToString([]byte{c})
 				child := &node{
@@ -264,7 +273,7 @@ walk:
 				n.addChild(child)
 				n.incrementChildPrio(len(n.indices) - 1)
 				n = child
-			} else if n.wildChild {//参数节点, :或者*
+			} else if n.wildChild { //参数节点, :或者*
 				// inserting a wildcard node, need to check if it conflicts with the existing wildcard
 				n = n.children[len(n.children)-1]
 				n.priority++
@@ -340,10 +349,14 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		wildcard, i, valid := findWildcard(path)
 		//终止条件： 不再有 通配符
 		if i < 0 { // No wildcard found
-			fmt.Println("【insertChild终止】",path)
+			if IsDebugging() {
+				fmt.Println("【insertChild终止】", path, "==handlers==", handlers)
+			}
 			break
 		}
-	    fmt.Printf("[insertChild] path=%v, fullPath=%v, handlers=%#v, \n",path,fullPath,handlers)
+		if IsDebugging() {
+			fmt.Printf("[insertChild] path=%v, fullPath=%v, handlers=%#v, \n", path, fullPath, handlers)
+		}
 		// The wildcard name must not contain ':' and '*'
 		if !valid {
 			panic("only one wildcard per path segment is allowed, has: '" +
@@ -461,7 +474,9 @@ type skippedNode struct {
 // given path.
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
 	var globalParamsCount int16
-fmt.Printf("[getValue] path=%v ,params=%+v,skippedNodes=%+v \n",path,params,skippedNodes)
+	if IsDebugging() {
+		fmt.Printf("[getValue] path=%v ,params=%+v,skippedNodes=%+v \n", path, params, skippedNodes)
+	}
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -529,7 +544,7 @@ walk: // Outer loop for walking the tree
 				globalParamsCount++
 
 				switch n.nType {
-				case param://参数类型
+				case param: //参数类型
 					// fix truncate the parameter
 					// tree_test.go  line: 204
 
@@ -915,12 +930,15 @@ walk: // Outer loop for walking the tree
 	return nil
 }
 
-func(n *node) Search1(){
-	if n == nil{
+func (n *node) Search1() {
+	if !IsDebugging() {
 		return
 	}
-	fmt.Printf("[打印当前节点] node==%#+v \n",n)
-	for i,_ := range n.children {
+	if n == nil {
+		return
+	}
+	fmt.Println("\n [打印当前root节点 信息]", n)
+	for i, _ := range n.children {
 		n.children[i].Search1()
 	}
 }

@@ -146,8 +146,8 @@ type Engine struct {
 	allNoMethod      HandlersChain
 	noRoute          HandlersChain
 	noMethod         HandlersChain
-	pool             sync.Pool //对象池，减少频繁内存申请gc，提高性能
-	trees            methodTrees//路由树
+	pool             sync.Pool   //对象池，减少频繁内存申请gc，提高性能
+	trees            methodTrees //路由树
 	maxParams        uint16
 	maxSections      uint16
 	trustedProxies   []string
@@ -301,7 +301,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
-	fmt.Println("addRoute==names: ",namesOfFunctions(handlers))
 	debugPrintRoute(method, path, handlers)
 
 	//根节点 node
@@ -519,7 +518,9 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 // ServeHTTP conforms to the http.Handler interface.
 //从 go的官方包中 又 流转回来，ServeHTTP是 实现了 go-http-server中ServeHTTP的实例
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("【提供ServeHTTP了】==== ServeHTTP【这是--GIN--http-服务--】")
+	if IsDebugging() {
+		fmt.Println("【提供ServeHTTP了】==== ServeHTTP【这是--GIN--http-服务--】")
+	}
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
@@ -553,8 +554,6 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	if engine.RemoveExtraSlash {
 		rPath = cleanPath(rPath)
 	}
-	fmt.Println("[GIN处理http请求] handleHTTPRequest-",httpMethod,rPath)
-
 	// Find root of the tree for the given HTTP method
 	t := engine.trees
 	for i, tl := 0, len(t); i < tl; i++ {
@@ -566,6 +565,9 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		value := root.getValue(rPath, c.params, c.skippedNodes, unescape)
 		if value.params != nil {
 			c.Params = *value.params
+		}
+		if IsDebugging() {
+			fmt.Println("[GIN处理http请求] handleHTTPRequest-", httpMethod, rPath, "该节点处理函数有: ", value.handlers, " 全路径：", value.fullPath)
 		}
 		if value.handlers != nil {
 			c.handlers = value.handlers

@@ -127,7 +127,8 @@ func nameOfFunction(f interface{}) string {
 	return name
 }
 
-func namesOfFunctions(fs ...interface{}) string {
+//fs HandlersChain可，fs ...interface{}不可
+func namesOfFunctions(fs HandlersChain) string {
 	names := []string{}
 	for i, _ := range fs {
 		name := nameOfFunction(fs[i])

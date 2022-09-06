@@ -167,7 +167,9 @@ func (c *Context) Next() {
 	for c.index < int8(len(c.handlers)) {
 		//获取 函数
 		curr := c.handlers[c.index]
-		nameOfFunction(curr)
+		if IsDebugging() {
+			fmt.Println("执行 处理handler中，handler是:", nameOfFunction(curr))
+		}
 		//执行函数
 		curr(c)
 		c.index++
