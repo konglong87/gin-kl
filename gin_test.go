@@ -779,3 +779,28 @@ func TestEngine_SetTrustedProxies(t *testing.T) {
 	//r.GET("/user/:name", routeUse)
 	r.Run(":8000")
 }
+
+func TestTree6(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	router.Use(Logger(), Recovery())
+	fmt.Println("[TestTree6]开始:")
+	router.GET("/support", handlerTest1)
+	router.GET("/search", handlerTest3)
+	router.Run(":90")
+}
+
+func TestTree7(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	router.Use(Logger(), Recovery())
+	fmt.Println("[TestTree7]开始:")
+	router.GET("/hism", handlerTest1)
+	router.GET("/hit", handlerTest3)
+	router.GET("/her", handlerTest3)
+	router.GET("/havad", handlerTest3)
+	router.GET("/has", handlerTest3)
+	router.Run(":90")
+}
