@@ -754,9 +754,24 @@ func TestGoHttp1(t *testing.T) {
 		w.Write([]byte("  恐龙🦖 :id "))
 	})
 
+	http.HandleFunc("/b/gua", func(w http.ResponseWriter, r *http.Request) {
+		panic("故意挂")
+	})
 	if err := http.ListenAndServe(":80", nil); err != nil {
 		log.Fatal("start http server fail:", err)
 	}
+}
+
+//自定义 实现 ServeHTTP,  给了其它web框架 发挥的空间
+type CustomMux struct{}
+
+func (cm *CustomMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "this is xsd \n please enter  www.xueshengduan.com!  ")
+	//if r.Method == "GET" {}
+}
+
+func TestCustomMux(t *testing.T) {
+	log.Fatal(http.ListenAndServe(":80", &CustomMux{}))
 }
 
 //设置受信任的代理
