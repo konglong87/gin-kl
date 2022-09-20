@@ -144,7 +144,7 @@ Priority   Path             Handle
 1          |        └team\  *<7>
 1          └contact\        *<8>
 */
-//radix-tree 节点 类型，类似的上次说 apisex也是用的这个数据结构，所以apisex说 时间复杂度是O(K),与K自身长度有关，http源码用的是map哈希， radix-tree基数树 内存小
+//radix-tree 节点 类型，类似的上次说 apisex也是用的这个数据结构，所以apisex说 时间复杂度是O(K),与K自身长度有关，http源码用的是map哈希， radix-tree基数树 内存小， 也叫 压缩字典树
 type node struct {
 	//这个节点的URL的路径
 	//例如search与support，共同的父节点path='s'，类型就是static
@@ -173,7 +173,38 @@ func (h HandlersChain) String() string {
 
 //自定义打印
 func (n *node) String() string {
+	fmt.Println(" 这是路有树: \n  " + n.FormatTree())
 	return fmt.Sprintf("%+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n", n, n.handlers, n.nType)
+}
+
+// FormatTree 格式化树结构
+// --
+//   |__ a
+//     |__ bd
+//     |__ d
+func (n *node) FormatTree() string {
+	var buf bytes.Buffer
+	if n.path == "" {
+		buf.WriteString("\n-- \n")
+	} else {
+		buf.WriteString("|__ " + n.path + "\n")
+	}
+	if n.children != nil {
+		for _, child := range n.children {
+			childStr := child.FormatTree()
+			// 增加前缀
+			// 分割行
+			sps := strings.Split(childStr, "\n")
+			for _, sp := range sps {
+				if sp != "" {
+					buf.WriteString("  ")
+					buf.WriteString(sp)
+					buf.WriteString("\n")
+				}
+			}
+		}
+	}
+	return buf.String()
 }
 
 // 增加指定孩子节点的优先级，并更新节点的indices
@@ -223,7 +254,7 @@ walk:
 		// Find the longest common prefix.
 		// This also implies that the common prefix contains no ':' or '*'
 		// since the existing key can't contain those chars.
-		i := longestCommonPrefix(path, n.path) //找到最长公共子前缀
+		i := longestCommonPrefix(path, n.path) //找到最长公共子前缀，然后 进行分裂：
 
 		// Split edge
 		//比如 /search与/support，最长公共子前缀是/s，则/s是父节点，非公共部分为子节点是eu, /s为新节点，eu 保存原来节点信息

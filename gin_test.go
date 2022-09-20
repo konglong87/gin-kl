@@ -661,10 +661,14 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 }
 
 func handlerTest1(c *Context) { c.JSONP(http.StatusOK, "handlerTest1") }
+func handlerTestANY(c *Context) {
+	c.JSONP(http.StatusOK, "handlerTest any"+c.FullPath()+"===="+c.Request.RequestURI+"--any="+c.Param("any"))
+}
 func handlerTest2(c *Context) {}
 func handlerTest3(c *Context) { c.JSONP(http.StatusOK, "handlerTest1， id="+c.Param("id")) }
 func handlerTest4(c *Context) { c.JSONP(http.StatusOK, "handlerTest4") }
 func handlerTest5(c *Context) { c.JSONP(http.StatusOK, "handlerTest5") }
+func handlerTest6(c *Context) { c.JSONP(http.StatusOK, "handlerTest6,name="+c.Param("name")) }
 
 func TestNew(t *testing.T) {
 	router := New()
@@ -682,7 +686,7 @@ func TestNew(t *testing.T) {
 
 func TestTree1(t *testing.T) {
 	//自定义 debug 信息，开关，是否打印，，默认 debug
-	//SetMode(DebugMode)
+	SetMode(DebugMode)
 	router := New()
 	fmt.Println(IsDebugging())
 	fmt.Println(Mode())
@@ -694,7 +698,11 @@ func TestTree1(t *testing.T) {
 	router.Use(middleware2)
 	router.GET("/her", handlerTest1)
 	router.GET("/her/:id", handlerTest3)
+	//router.GET("/her/:name", handlerTest6) //panic: ':name' in new path '/her/:name' conflicts with existing wildcard ':id' in existing prefix '/her/:id' [recovered]
+	router.POST("/her/name", handlerTest6)
 	router.GET("/his", handlerTest4)
+	//router.GET("/his/*", handlerTest)
+	router.GET("/his/*any", handlerTestANY)
 
 	router.POST("/her", handlerTest5)
 
@@ -713,10 +721,37 @@ func middleware2(c *Context) {
 	fmt.Println("[middleware2] this is middleware2 .")
 }
 
+func TestTree5(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	router.Use(Logger(), Recovery())
+	fmt.Println("[TestTree5]开始:")
+	router.GET("/support", handlerTest1)
+	router.GET("/search", handlerTest3)
+	router.GET("/blog/:post", handlerTest3)
+	router.GET("/about-us", handlerTest3)
+	router.GET("/about-us/team", handlerTest3)
+	router.GET("/contact", handlerTest3)
+	router.Run(":90")
+}
+
 //用go的原生http
 func TestGoHttp1(t *testing.T) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("  恐龙🦖 "))
+	})
+
+	http.HandleFunc("/a", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("  恐龙🦖 a "))
+	})
+
+	http.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("  恐龙🦖 b "))
+	})
+
+	http.HandleFunc("/b/:id", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("  恐龙🦖 :id "))
 	})
 
 	if err := http.ListenAndServe(":80", nil); err != nil {
