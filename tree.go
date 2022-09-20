@@ -144,7 +144,7 @@ Priority   Path             Handle
 1          |        └team\  *<7>
 1          └contact\        *<8>
 */
-//radix-tree 节点 类型，类似的上次说 apisex也是用的这个数据结构，所以apisex说 时间复杂度是O(N),与自身长度有关，而kong则是与 api的数量正相关
+//radix-tree 节点 类型，类似的上次说 apisex也是用的这个数据结构，所以apisex说 时间复杂度是O(K),与K自身长度有关，http源码用的是map哈希， radix-tree基数树 内存小
 type node struct {
 	//这个节点的URL的路径
 	//例如search与support，共同的父节点path='s'，类型就是static
@@ -162,28 +162,36 @@ type node struct {
 	fullPath string
 }
 
+//每一层的节点按照priority排序，一个节点的priority值表示他包含的所有子节点（子节点，孙节点等）的数量，这样做有两个好处：
+//1. 被最多路径包含的节点会被最先评估。这样可以让尽量多的路由快速被定位。
+//2. 有点像成本补偿。最长的路径可以被最先评估，补偿体现在最长的路径需要花费更长的时间来定位，如果最长路径的节点能被优先评估（即每次拿子节点都命中），那么所花时间不一定比短路径的路由长。
+
+//自定义打印
 func (h HandlersChain) String() string {
 	return namesOfFunctions(h)
 }
 
+//自定义打印
 func (n *node) String() string {
 	return fmt.Sprintf("%+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n", n, n.handlers, n.nType)
 }
 
+// 增加指定孩子节点的优先级，并更新节点的indices
+// 这并不会影响路由功能，但是可以加快孩子节点的查找速度
 // Increments priority of the given child and reorders if necessary
 func (n *node) incrementChildPrio(pos int) int {
 	cs := n.children
 	cs[pos].priority++
 	prio := cs[pos].priority
 
-	// Adjust position (move to front)
+	// Adjust position (move to front)	// 将更新后的priority向前移动，保持按优先级降序排列
 	newPos := pos
 	for ; newPos > 0 && cs[newPos-1].priority < prio; newPos-- {
 		// Swap node positions
 		cs[newPos-1], cs[newPos] = cs[newPos], cs[newPos-1]
 	}
 
-	// Build new index char string
+	// Build new index char string	// 根据优先级重新构建indices，indices保存着当前节点下的每个孩子节点的首字符
 	if newPos != pos {
 		n.indices = n.indices[:newPos] + // Unchanged prefix, might be empty
 			n.indices[pos:pos+1] + // The index char we move
@@ -196,6 +204,7 @@ func (n *node) incrementChildPrio(pos int) int {
 //建树
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
+//添加路由的逻辑有点绕，简而言之就是  找到正确的位置  调用insertChild 将新的节点加到树中
 func (n *node) addRoute(path string, handlers HandlersChain) {
 	fullPath := path
 	n.priority++
@@ -214,13 +223,13 @@ walk:
 		// Find the longest common prefix.
 		// This also implies that the common prefix contains no ':' or '*'
 		// since the existing key can't contain those chars.
-		i := longestCommonPrefix(path, n.path)
+		i := longestCommonPrefix(path, n.path) //找到最长公共子前缀
 
 		// Split edge
-		//比如 /search与/support，最长公共子前缀是/s，则/s是父节点，
+		//比如 /search与/support，最长公共子前缀是/s，则/s是父节点，非公共部分为子节点是eu, /s为新节点，eu 保存原来节点信息
 		if i < len(n.path) {
 			child := node{
-				path:      n.path[i:],
+				path:      n.path[i:], //非公共的部分
 				wildChild: n.wildChild,
 				indices:   n.indices,
 				children:  n.children,
@@ -239,6 +248,8 @@ walk:
 		}
 
 		// Make new node a child of this node
+		// 例如n.path=/a path=/abc 则进入if语句
+		// 在当前节点创建一个新的子节点
 		if i < len(path) {
 			path = path[i:]
 			c := path[0]
@@ -246,24 +257,24 @@ walk:
 			// '/' after param
 			if n.nType == param && c == '/' && len(n.children) == 1 {
 				parentFullPathIndex += len(n.path)
-				n = n.children[0]
-				n.priority++
+				n = n.children[0] //当前节点等于子节点
+				n.priority++      // 对应子节点优先级加1
 				fmt.Printf("[当前addRoute][n.nType == param && c == '/' ] node==%#+v \n", n)
 				continue walk
 			}
 
-			// Check if a child with the next path byte exists
+			// Check if a child with the next path byte exists	// 循环查找，n.indices记录着所有孩子节点的第一个字符
 			for i, max := 0, len(n.indices); i < max; i++ {
-				if c == n.indices[i] {
+				if c == n.indices[i] { //如果找到和当前要插入节点的第一个字符相符，匹配成功
 					parentFullPathIndex += len(n.path)
-					i = n.incrementChildPrio(i)
+					i = n.incrementChildPrio(i) // 对应子节点优先级加1，并对该子节点的indices重新排列
 					n = n.children[i]
 					fmt.Printf("[当前addRoute][ i, max := 0, len(n.indices);] node==%#+v \n", n)
 					continue walk
 				}
 			}
 
-			// Otherwise insert it
+			// Otherwise insert it    // 如果添加的节点既不是 * 也不是:这样的通配节点,，，，插入
 			if c != ':' && c != '*' && n.nType != catchAll { //默认static节点
 				// []byte for proper unicode char conversion, see #65
 				n.indices += bytesconv.BytesToString([]byte{c})
@@ -279,8 +290,15 @@ walk:
 				n.priority++
 
 				// Check if the wildcard matches
+				// 此时的path 已经取成了公共前缀 后的部分
+				// 例如原来的路径是/usr/:name，假设当前n节点的父节点为n father
+				// 而n在前面已经取成了n father孩子节点
+				// 目前情况是nfather.path=/usr，由于其子节点是通配符节点
+				// 故nfather.wildChild=true，n.path=/:name
+				// 假设新加进来的节点path=/:nameserver
+				//则符合这里的if条件，跳转到walk，以n为父节点继续匹配
 				if len(path) >= len(n.path) && n.path == path[:len(n.path)] &&
-					// Adding a child to a catchAll is not possible
+					// Adding a child to a catchAll is not possible// 不可能在全匹配节点（例如*name）后继续加子节点
 					n.nType != catchAll &&
 					// Check for longer wildcard, e.g. :name and :names
 					//检查 是不是 更长的参数，比如 /einstein-logic/v1/user/:userId,与/einstein-logic/v1/user/:userIdssss
@@ -319,6 +337,7 @@ walk:
 
 // Search for a wildcard segment and check the name for invalid characters.
 // Returns -1 as index, if no wildcard was found.
+// wildcard-通配符字符串（例如:name,wildcard就为name） i-通配符在path的索引 valid-是否有合法的通配符
 func findWildcard(path string) (wildcard string, i int, valid bool) {
 	// Find start
 	for start, c := range []byte(path) {
@@ -334,7 +353,7 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 			switch c {
 			case '/':
 				return path[start : start+1+end], start, valid
-			case ':', '*':
+			case ':', '*': //一个通配符后还有一个通配符，valid置为false
 				valid = false
 			}
 		}
@@ -343,6 +362,7 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 	return "", -1, false
 }
 
+//插入子节点
 func (n *node) insertChild(path string, fullPath string, handlers HandlersChain) {
 	for {
 		// Find prefix until first wildcard
@@ -387,6 +407,11 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 
 			// if the path doesn't end with the wildcard, then there
 			// will be another non-wildcard subpath starting with '/'
+			// 如果通配符后面还有字符，则一定以/为开头
+			// 例如/:name/age 通配符后还有/age
+			// 这里的英文注释说“将会有另一个以'/'开头的非通配符子路径”
+			// 这不代表不能处理/:name/*hobby这种，上面已经展示了会将通配符的前面部分
+			// 设为父节点，也就是说通配符节点的父节点一定是一个非通配符节点，英文的注释应该这么理解的
 			if len(wildcard) < len(path) {
 				path = path[len(wildcard):]
 
@@ -404,7 +429,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			return
 		}
 
-		// catchAll
+		// catchAll		// 通配符不是:那么就是*，因为*是全匹配的通配符，那么这种情况是不允许的/*name/pwd，*必须在最后
 		if i+len(wildcard) != len(path) {
 			panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
 		}
@@ -422,7 +447,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		n.path = path[:i]
 
 		// First node: catchAll node with empty path
-		//通配符类型 *
+		//通配符类型 *		// *可以匹配0个或多个字符，第一个节点保存为空，也就是*匹配0个字符的情况
 		child := &node{
 			wildChild: true,
 			nType:     catchAll,
@@ -435,6 +460,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		n.priority++
 
 		// second node: node holding the variable
+		// 匹配多个字符的情况
 		child = &node{
 			path:     path[i:],
 			nType:    catchAll,
