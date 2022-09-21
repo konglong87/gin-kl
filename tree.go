@@ -90,7 +90,7 @@ func longestCommonPrefix(a, b string) int {
 // addChild will add a child node, keeping wildcards at the end
 func (n *node) addChild(child *node) {
 	if IsDebugging() {
-		fmt.Println("==> 插入到子节点【addChild】 node==\n", child)
+		fmt.Println("\n ==> 插入到子节点【addChild】 node== \n", child)
 	}
 	if n.wildChild && len(n.children) > 0 {
 		wildcardChild := n.children[len(n.children)-1]
@@ -173,8 +173,8 @@ func (h HandlersChain) String() string {
 
 //自定义打印
 func (n *node) String() string {
-	fmt.Println(" 这是路有树: \n  " + n.FormatTree())
-	return fmt.Sprintf("%+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n", n, n.handlers, n.nType)
+	//fmt.Println(" 这是路有树: \n  " + n.FormatTree())
+	return fmt.Sprintf("⭐️⭐️⭐️[打印整个node]=⭐️⭐️⭐️   \n %s, %+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n",n.FormatTree(), n, n.handlers, n.nType)
 }
 
 // FormatTree 格式化树结构
@@ -279,7 +279,7 @@ walk:
 		}
 
 		// Make new node a child of this node
-		// 例如n.path=/a path=/abc 则进入if语句
+		// 比如 /search与/support，则进入if语句
 		// 在当前节点创建一个新的子节点
 		if i < len(path) {
 			path = path[i:]
@@ -994,7 +994,7 @@ func (n *node) Search1() {
 	if n == nil {
 		return
 	}
-	fmt.Println("\n [创建 路由树][打印当前root节点 信息]", n)
+	fmt.Printf("[创建 路由树][打印当前 node 节点 信息] %+#v  \n", n)
 	for i, _ := range n.children {
 		n.children[i].Search1()
 	}

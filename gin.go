@@ -315,6 +315,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 
 	//自定义打印，只是方便查看，无关gin功能
 	root.Search1()
+	fmt.Println("root = >.>>",root)
 
 	// Update maxParams
 	if paramsCount := countParams(path); paramsCount > engine.maxParams {

@@ -819,3 +819,39 @@ func TestTree7(t *testing.T) {
 	router.GET("/has", handlerTest3)
 	router.Run(":90")
 }
+
+func TestTree8(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	router.Use(Logger(), Recovery())
+	fmt.Println("[TestTree8]开始:")
+	router.GET("/hism", handlerTest1)
+	router.GET("/hit", handlerTest3)
+	router.GET("/her", handlerTest3)
+	router.GET("/havad", handlerTest3)
+	router.GET("/has", handlerTest3)
+	router.GET("/has/:id", handlerTest3)
+	router.GET("/has/:id/name", handlerTest3)
+	router.GET("/has/:id/name/*any", handlerTest3)
+	router.Run(":90")
+}
+
+func TestTree9(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	fmt.Println("[TestTree9]开始:")
+	router.GET("/has/:id", handlerTest3)
+	router.GET("/has", handlerTest3)
+	router.Run(":90")
+}
+
+func TestTree10(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	fmt.Println("[TestTree10]开始:")
+	router.GET("/has", handlerTest1)
+	router.Run(":90")
+}
