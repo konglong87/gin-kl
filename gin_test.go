@@ -813,11 +813,15 @@ func TestTree7(t *testing.T) {
 	router.Use(Logger(), Recovery())
 	fmt.Println("[TestTree7]开始:")
 	router.GET("/hism", handlerTest1)
-	router.GET("/hit", handlerTest3)
+	router.GET("/hit", handlerTest2)
 	router.GET("/her", handlerTest3)
-	router.GET("/havad", handlerTest3)
-	router.GET("/has", handlerTest3)
+	router.GET("/havad", handlerTest4)
+	router.GET("/has", handlerTest5)
 	router.Run(":90")
+	//	static   nodeType = iota // default
+	//	root                     //根节点1
+	//	param                    //参数节点2
+	//	catchAll                 //通配符，节点，必须在路径的最后，3
 }
 
 func TestTree8(t *testing.T) {

@@ -129,6 +129,20 @@ const (
 	*/
 )
 
+func (n nodeType) String() (res string) {
+	switch uint8(n) {
+	case 0:
+		res = "0=nodeType=默认类型"
+	case 1:
+		res = " 🌲 🌲 1=root=根节点 🌲 🌲"
+	case 2:
+		res = "2=param=参数节点"
+	case 3:
+		res = "3=catchAll=通配符节点"
+	}
+	return
+}
+
 /*----------------------------------
 //----------GET请求树例子-------------
 //----------------------------------
@@ -174,7 +188,7 @@ func (h HandlersChain) String() string {
 //自定义打印
 func (n *node) String() string {
 	//fmt.Println(" 这是路有树: \n  " + n.FormatTree())
-	return fmt.Sprintf("⭐️⭐️⭐️[打印整个node]=⭐️⭐️⭐️   \n %s, %+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n", n.FormatTree(), n, n.handlers, n.nType)
+	return fmt.Sprintf("⭐️⭐️⭐️[打印当前node]=⭐️⭐️⭐️   \n %s, %+#v \n 节点类型:%s,  \n 其中handlers有 [%-7s] \n ", n.FormatTree(), n, n.nType, n.handlers)
 }
 
 // FormatTree 格式化树结构
@@ -994,7 +1008,7 @@ func (n *node) Search1() {
 	if n == nil {
 		return
 	}
-	fmt.Printf("[创建 路由树][打印当前 node 节点 信息] %+#v  \n", n)
+	fmt.Printf("[node.Search1][打印当前 node 节点 信息] %+#v  \n", n)
 	for i, _ := range n.children {
 		n.children[i].Search1()
 	}
