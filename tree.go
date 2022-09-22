@@ -174,7 +174,7 @@ func (h HandlersChain) String() string {
 //自定义打印
 func (n *node) String() string {
 	//fmt.Println(" 这是路有树: \n  " + n.FormatTree())
-	return fmt.Sprintf("⭐️⭐️⭐️[打印整个node]=⭐️⭐️⭐️   \n %s, %+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n",n.FormatTree(), n, n.handlers, n.nType)
+	return fmt.Sprintf("⭐️⭐️⭐️[打印整个node]=⭐️⭐️⭐️   \n %s, %+#v \n 其中handlers有 [%-7s] \n 节点类型:%d \n", n.FormatTree(), n, n.handlers, n.nType)
 }
 
 // FormatTree 格式化树结构
