@@ -869,5 +869,47 @@ func TestTree11(t *testing.T) {
 	router.GET("/h/a", handlerTest2)
 	router.GET("/h/b", handlerTest2)
 	router.GET("/h/c", handlerTest2)
+	router.GET("/h/ddddddddd", handlerTest2)
+	router.GET("/h/ddddddddd/kkkkk", handlerTest2)
+	router.Run(":90")
+}
+
+func TestTree_EinsteinLogic(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	//实际案例 EinsteinLogic
+	router := New()
+	router.Use(middleware1, middleware2)
+	rgroup := router.Group("einstein-logic")
+	// health  check
+	rgroup.GET("/ping", func(c *Context) { c.String(200, "pong") })
+	rgroup.GET("/v1/users/:userId/statistical", handlerTest1)
+	rgroup.POST("/v1/setUserLearningRecord", handlerTest1)
+
+	rgroup.GET("/v1/banner", handlerTest1)
+	rgroup.GET("/v1/userSchedule", handlerTest1)
+	rgroup.GET("/v1/subjects", handlerTest1)
+	rgroup.GET("/v1/units/:unitId", handlerTest1)
+	rgroup.GET("/v1/units", handlerTest1)
+	rgroup.GET("/v1/courses", handlerTest1)
+	rgroup.GET("/v2/userSchedule", handlerTest1)
+	rgroup.GET("/v1/courses/:courseId/units", handlerTest1)
+	rgroup.GET("/v1/courses/:courseId/units/:unitId/chapters", handlerTest1)
+	rgroup.GET("/v2/courses/:courseId/units/:unitId/chapters", handlerTest1)
+
+	//高阶课程
+	rgroup.GET("/v2/subjects", handlerTest1)
+	rgroup.GET("/v3/subjects", handlerTest1)
+	rgroup.GET("/v2/courses", handlerTest1)
+	rgroup.GET("/v2/units", handlerTest1)
+	rgroup.GET("/v2/chapters", handlerTest1)
+
+	// 专项课
+	rgroup.GET("/v4/subjects", handlerTest1)
+
+	rgroup.GET("/trees", func(context *Context) {
+		fmt.Println(router.trees)
+	})
+
 	router.Run(":90")
 }
