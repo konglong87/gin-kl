@@ -169,7 +169,7 @@ func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 
 //设置 test mode，默认 debug
 func init() {
-	SetMode(TestMode)
+	//SetMode(TestMode)
 }
 
 func TestCreateEngine(t *testing.T) {

@@ -329,6 +329,7 @@ walk:
 				n.addChild(child)
 				n.incrementChildPrio(len(n.indices) - 1)
 				n = child
+				fmt.Printf("[当前addRoute][n.nType == 默认static节点 ] node==%#+v \n", n)
 			} else if n.wildChild { //参数节点, :或者*
 				// inserting a wildcard node, need to check if it conflicts with the existing wildcard
 				n = n.children[len(n.children)-1]
