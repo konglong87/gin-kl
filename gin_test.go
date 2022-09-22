@@ -859,3 +859,15 @@ func TestTree10(t *testing.T) {
 	router.GET("/has", handlerTest1)
 	router.Run(":90")
 }
+
+func TestTree11(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	fmt.Println("[TestTree11]开始:")
+	router.GET("/h", handlerTest1)
+	router.GET("/h/a", handlerTest2)
+	router.GET("/h/b", handlerTest2)
+	router.GET("/h/c", handlerTest2)
+	router.Run(":90")
+}
