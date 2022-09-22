@@ -367,7 +367,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	// 调用 http 监听，流转 到go源码-官方包，engine  作为 go源码监听时候的handler参数 传进去，engine实现了ServeHTTP函数
+	// 调用 go http 监听，request 流转 到go源码-官方包，engine  作为 go源码监听时候的handler参数 传进去，engine实现了ServeHTTP函数
 	err = http.ListenAndServe(address, engine)
 	return
 }

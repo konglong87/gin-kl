@@ -61,6 +61,7 @@ type methodTree struct {
 type methodTrees []methodTree
 
 //tips: 为什么用 数组 不用 map？
+//map 麻烦，底层
 func (trees methodTrees) get(method string) *node {
 	for _, tree := range trees {
 		if tree.method == method {
@@ -371,7 +372,7 @@ walk:
 		}
 
 		// Otherwise add handle to current node
-		//相同路径，直接替换handlers
+		//相同路径，直接panic
 		if n.handlers != nil {
 			panic("handlers are already registered for path '" + fullPath + "'")
 		}

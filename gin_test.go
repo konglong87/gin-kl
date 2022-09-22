@@ -709,6 +709,7 @@ func TestTree1(t *testing.T) {
 	//fmt.Println(router.Routes())
 	router.Run(":90")
 }
+
 func middleware1(c *Context) {
 	start := time.Now()
 	//处理业务
@@ -739,6 +740,7 @@ func TestTree5(t *testing.T) {
 //用go的原生http
 func TestGoHttp1(t *testing.T) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		//request.Body
 		w.Write([]byte("  恐龙🦖 "))
 	})
 
@@ -757,21 +759,29 @@ func TestGoHttp1(t *testing.T) {
 	http.HandleFunc("/b/gua", func(w http.ResponseWriter, r *http.Request) {
 		panic("故意挂")
 	})
-	if err := http.ListenAndServe(":80", nil); err != nil {
+	if err := http.ListenAndServe(":81", nil); err != nil {
 		log.Fatal("start http server fail:", err)
 	}
 }
 
 //自定义 实现 ServeHTTP,  给了其它web框架 发挥的空间
-type CustomMux struct{}
+type CustomServerMux struct{}
 
-func (cm *CustomMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (cm *CustomServerMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "this is xsd \n please enter  www.xueshengduan.com!  ")
-	//if r.Method == "GET" {}
+	if r.Method == "GET" {
+		//	....
+		//	header['token']
+	}
+
+	if r.Method == "POST" {
+		//r.Body
+	}
+
 }
 
 func TestCustomMux(t *testing.T) {
-	log.Fatal(http.ListenAndServe(":80", &CustomMux{}))
+	log.Fatal(http.ListenAndServe(":80", &CustomServerMux{}))
 }
 
 //设置受信任的代理
@@ -797,26 +807,29 @@ func TestEngine_SetTrustedProxies(t *testing.T) {
 
 func TestTree6(t *testing.T) {
 	//自定义 debug 信息，开关，是否打印，，默认 debug
-	SetMode(DebugMode)
-	router := New()
-	router.Use(Logger(), Recovery())
+	//SetMode(DebugMode)
+	g := New()
+	g.Use(Logger(), Recovery())
 	fmt.Println("[TestTree6]开始:")
-	router.GET("/support", handlerTest1)
-	router.GET("/search", handlerTest3)
-	router.Run(":90")
+	g.GET("/support", handlerTest1)
+	g.GET("/search", handlerTest3)
+	g.Run(":90")
 }
 
-func TestTree7(t *testing.T) {
+func TestTree17(t *testing.T) {
 	//自定义 debug 信息，开关，是否打印，，默认 debug
 	SetMode(DebugMode)
 	router := New()
 	router.Use(Logger(), Recovery())
 	fmt.Println("[TestTree7]开始:")
-	router.GET("/hism", handlerTest1)
-	router.GET("/hit", handlerTest2)
-	router.GET("/her", handlerTest3)
-	router.GET("/havad", handlerTest4)
-	router.GET("/has", handlerTest5)
+	BaluGe := router.Group("/balu")
+
+	BaluGe.GET("/sm/:name", handlerTest1)
+	BaluGe.GET("/sm/:name", handlerTest1)
+	//BaluGe.GET("/hit", handlerTest2)
+	//BaluGe.GET("/her", handlerTest3)
+	//BaluGe.GET("/havad", handlerTest4)
+	//BaluGe.GET("/has", handlerTest5)
 	router.Run(":90")
 	//	static   nodeType = iota // default
 	//	root                     //根节点1
@@ -911,5 +924,59 @@ func TestTree_EinsteinLogic(t *testing.T) {
 		fmt.Println(router.trees)
 	})
 
+	router.Run(":90")
+}
+
+func TestTree15(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	//SetMode(DebugMode)
+	g := New()
+	g.Static("/", "gin-kl")
+	g.Run(":90")
+}
+
+func TestTree7(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	router.Use(Logger(), Recovery())
+	fmt.Println("[TestTree7]开始:")
+	BaluGe := router.Group("/balu")
+
+	BaluGe.GET("/sm/:name", handlerTest1)
+	BaluGe.GET("/sm/:name", handlerTest1)
+	//BaluGe.GET("/hit", handlerTest2)
+	//BaluGe.GET("/her", handlerTest3)
+	//BaluGe.GET("/havad", handlerTest4)
+	//BaluGe.GET("/has", handlerTest5)
+	router.Run(":90")
+	//	static   nodeType = iota // default
+	//	root                     //根节点1
+	//	param                    //参数节点2
+	//	catchAll                 //通配符，节点，必须在路径的最后，3
+}
+
+func middleware3(c *Context) {
+	fmt.Println("beforen [middleware3].")
+	c.Next()
+	fmt.Println("afetr [middleware3].")
+}
+func middleware4(c *Context) {
+	c.Next()
+	fmt.Println("beforen [middleware4].")
+	fmt.Println("afetr [middleware4].")
+}
+func middleware5(c *Context) {
+	fmt.Println("beforen [middleware5].")
+	fmt.Println("afetr [middleware5].")
+	c.Next()
+
+}
+func TestTree18(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	router.Use(middleware3, middleware4, middleware5)
+	router.GET("/baluge-sm", handlerTest1)
 	router.Run(":90")
 }
