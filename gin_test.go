@@ -7,12 +7,14 @@ package gin
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/gin-gonic/gin/internal/json"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strconv"
 	"sync/atomic"
@@ -979,4 +981,104 @@ func TestTree18(t *testing.T) {
 	router.Use(middleware3, middleware4, middleware5)
 	router.GET("/baluge-sm", handlerTest1)
 	router.Run(":90")
+}
+
+func handlerChunk1(c *Context) {
+	c.Writer.Write(getChunk1Data())
+	//c.JSONP(http.StatusOK, getChunk1Data())
+}
+
+//实时， 分块，chunk
+func getChunk1Data() []byte {
+	var data = map[string]interface{}{
+		"args": os.Args,
+		"env":  os.Environ(),
+	}
+	bts, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	return bts
+}
+
+func TestChunk1(t *testing.T) {
+	//自定义 debug 信息，开关，是否打印，，默认 debug
+	SetMode(DebugMode)
+	router := New()
+	router.GET("/c1", handlerChunk1)
+	router.Run(":90")
+}
+
+//实时2，		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+func TestChunk2(t *testing.T) {
+	handlerChunk2 := func(c *Context) {
+		flusher, ok := c.Writer.(http.Flusher)
+		if !ok {
+			panic("expected http.ResponseWriter to be an http.Flusher")
+		}
+		//如果服务器发送响应头 “X-Content-Type-Options: nosniff”，则 script 和 styleSheet 元素会拒绝包含错误的 MIME 类型的响应。这是一种安全功能，有助于防止基于 MIME 类型混淆的攻击
+		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+		for i := 1; i <= 10; i++ {
+			fmt.Fprintf(c.Writer, "Chunk #%d\n", i)
+			flusher.Flush() // Trigger "chunked" encoding and send a chunk...
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+	router := New()
+	router.GET("/c1", handlerChunk2)
+	router.Run(":90")
+}
+
+func TestChunk3(t *testing.T) {
+	handlerChunk3 := func(ctx *Context) {
+		w := ctx.Writer
+		header := w.Header()
+		//在响应头添加分块传输的头字段Transfer-Encoding: chunked
+		header.Set("Transfer-Encoding", "chunked")
+		header.Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+
+		//Flush()方法，好比服务端在往一个文件中写了数据，浏览器会看见此文件的内容在不断地增加。
+		w.Write([]byte(`
+            <html>
+                    <body>
+        `))
+		w.(http.Flusher).Flush()
+
+		for i := 0; i < 10; i++ {
+			w.Write([]byte(fmt.Sprintf(`
+                <h1>%d</h1>
+            `, i)))
+			w.(http.Flusher).Flush()
+			time.Sleep(time.Duration(1) * time.Second)
+		}
+
+		w.Write([]byte(`
+                    </body>
+            </html>
+        `))
+		w.(http.Flusher).Flush()
+	}
+	router := New()
+	router.GET("/c1", handlerChunk3)
+	router.Run(":90")
+}
+
+///必须加响应头 c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+func TestChunk4(t *testing.T) {
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		flusher, ok := writer.(http.Flusher)
+		//writer.Header().Set("Transfer-Encoding", "chunked")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		if !ok {
+			panic("expected http.ResponseWriter to be an http.Flusher")
+		}
+		for i := 0; i < 6; i++ {
+			fmt.Fprintf(writer, "chunk [%02d]: %v\n", i, time.Now())
+			flusher.Flush()
+			time.Sleep(time.Second)
+		}
+	})
+
+	http.ListenAndServe(":90", nil)
 }
